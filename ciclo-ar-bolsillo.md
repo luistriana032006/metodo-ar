@@ -1,4 +1,4 @@
-# Ciclo AR v2 — de bolsillo
+# Ciclo AR v3 — de bolsillo
 > Copiar y pegar al inicio de cualquier proyecto. Versión completa: `02-framework-ar-practitioners.md`.
 
 ---
@@ -16,6 +16,7 @@ Antes de abrir el chat, prepara:
 - La tarea descompuesta en pasos pequeños y ordenados.
 - **Qué NO entra en este bloque** — explícito, al lado de qué sí entra. Sin esto el agente "mejora" cosas fuera de alcance y no es un fallo de plan, es un fallo de límite.
 - Si hubo sesiones anteriores: un resumen de qué funcionó y qué falló.
+- **Nombres de archivo, definidos una vez:** kebab-case, fecha ISO `AAAA-MM-DD` con ceros (si `ls | sort` no ordena por fecha real, está mal), la versión NUNCA pegada al nombre (`cosa2.md` → no; anclas `§N` dentro del mismo archivo, o `cosa-v2.md` si hay que partirlo de verdad). Un rol = un nombre fijo, sin importar qué día se escribe.
 
 **No abras el agente sin esto listo.**
 
@@ -26,6 +27,8 @@ Al darle cada tarea al agente, indícale que al terminar cada paso debe reportar
 - Qué archivos tocó y por qué.
 - Qué errores encontró.
 - Si resolvió algo de forma diferente a lo que se le pidió — y cómo.
+- **Clasificá cada decisión propia por peso:** cosmética / técnica-interna / de producto. Solo la de producto se propone y se espera el visto bueno ANTES de codear — no se reporta como hecho consumado al cerrar.
+- **Ningún secreto entra al chat** (token, contraseña, clave API) — ni pegado ni generado ahí. Si uno lo toca por accidente, se rota, se haya usado o no.
 
 ---
 
@@ -54,6 +57,7 @@ Abre un chat nuevo. No copies el historial de errores.
 Solo lleva:
 - Lo que funcionó.
 - Lo que falló (limpio, sin el hilo de intentos — o el case study del PASO 4 si aplica).
+- **Lo que se construyó y se revirtió** — con el mismo detalle que lo que quedó. Si no queda registrado, un agente futuro puede volver a proponer lo mismo que ya se descartó.
 - El plan ajustado con lo que aprendiste.
 
 El nuevo chat arranca con criterio, no con ruido.

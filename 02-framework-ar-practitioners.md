@@ -227,3 +227,86 @@ La sección 04 decide si automatizar algo o no. Pero dentro de una iniciativa ya
 > Estos cuatro patrones no reemplazan a los cinco originales — los rodean. Aparecen cuando el Ciclo AR deja de aplicarse a una tarea de un día y empieza a aplicarse a un proyecto que vive semanas. La prueba de que un patrón nuevo vale la pena no es la elegancia — es que resolvió una fricción real y quedó evidencia de eso en el trabajo, no solo en la teoría.
 
 *Validado en: [Helecho](../Helecho) — mayo–junio 2026.*
+
+---
+
+## 09 — Patrones y Riesgos v3 (de correr el Ciclo AR en paralelo, en dos proyectos)
+
+Los patrones de la sección 08 salieron de aplicar el Ciclo AR a *un* proyecto largo. Correr dos proyectos completos a la vez —Siwar (app educativa, semanas de julio 2026) y Helecho (editor de escritorio, mayo–julio 2026)— con la misma disciplina expuso algo que un solo proyecto no muestra: cómo se acumulan las decisiones propias sesión tras sesión, y qué pasa cuando la convención de nombres de archivo no se define una vez y se respeta, sino que se reinventa cada vez que se abre un documento nuevo. Cuatro patrones nuevos y dos riesgos observados — riesgos porque no hay todavía una solución probada, solo la señal de que hace falta una.
+
+### P-09 — Gradiente de Decisión Propia
+*"No toda decisión propia pesa igual"*
+
+P-02 pide marcar cuándo el agente decidió algo por su cuenta. En la práctica esa etiqueta se usa igual para "reusé el almacén que ya existía en vez de crear uno nuevo" y para "cambié el orden pedagógico del curso". Ambas quedan como "decisión propia" sin distinguirse — y eso es exactamente lo que vuelve difícil, al auditar, saber cuál necesitaba tu visto bueno antes de seguir y cuál era solo ruido de trazabilidad. La etiqueta sola no alcanza: hace falta un segundo eje, el peso.
+
+> **Regla:** Clasificá cada decisión propia en cosmética, técnica-interna o de producto. Solo la de producto necesita parar y preguntar antes de seguir — las otras dos se agrupan y se revisan juntas en el PASO 3 (AUDITAR).
+
+*Nombre técnico: Decision impact tiering / Autonomy-weighted deviation logging*
+
+### P-10 — Decisión Propia Pre-Acordada
+*"Proponer y acordar en el momento, no reportar después"*
+
+P-03 asume que la desviación se reporta al cerrar la sesión. En la práctica, para las decisiones de peso medio, ya está pasando algo mejor: se proponen y se acuerdan en el momento ("decisión propia acordada con Luis"), antes de escribir el código — no se reportan como hecho consumado al final. Es una versión más estricta de P-03, que ya se aplica sola sin estar nombrada.
+
+> **Regla:** Si una decisión propia es de peso medio o alto (ver P-09), proponela y esperá el visto bueno antes de codear — no la reportes ya hecha al cierre de sesión.
+
+*Nombre técnico: Synchronous deviation approval / Pre-commit decision gating*
+
+### P-11 — Bitácora de Reversión
+*"Lo que se construyó bien y se deshizo también es conocimiento"*
+
+P-07 documenta bugs con causa raíz. Pero hay un caso distinto: una funcionalidad que se construyó *bien*, funcionó, y se deshizo igual porque no encajaba en el producto (ejemplo real: subrayado por coordenadas en Helecho, implementado y revertido a pedido del usuario). Sin registrarlo con el mismo detalle que una feature viva, un agente en una sesión futura puede volver a proponer exactamente lo mismo que ya se descartó, sin saber que ya se intentó.
+
+> **Regla:** Documentá lo revertido con el mismo nivel de detalle que lo que quedó — qué se construyó, por qué no sirvió, qué volvió a su lugar. Un "⛔ Intento revertido" al lado de las funcionalidades vivas, no una nota al margen.
+
+*Nombre técnico: Rejected-implementation log / Negative-result documentation*
+
+### P-12 — Secretos Fuera del Contexto
+*"Si tocó el chat, se considera quemado"*
+
+Un token de GitHub se pegó sin querer en el chat durante una sesión de Helecho. Se revocó y se regeneró igual, aunque nunca se hubiera usado con mala intención — la copia quedó en el historial de la conversación, y eso basta para tratarlo como comprometido. El segundo token se cargó directo en `.env` desde el editor, nunca a través del agente.
+
+> **Regla:** Ningún secreto (token, contraseña, clave API) entra al contexto del agente, ni para pegarlo ni para que lo genere. Si uno lo toca por accidente, se rota — se haya usado o no.
+
+*Nombre técnico: Secret hygiene / Context-boundary credential isolation*
+
+### P-13 — Convención de Nombres de Archivo
+*"Un rol, un nombre, una fecha que ordena bien"*
+
+Entre Siwar y Helecho —y dentro del mismo Helecho, entre `apuntesV1/` y `apuntes_v2/`— el estilo de nombres cambia sin razón técnica: `estado_sesion_10jul.md` (snake_case, sin año, sin cero a la izquierda) al lado de `2026-07-06-mensajes-de-voz.md` (kebab-case, ISO completo); `funcionalidades.md` que se convierte en `funcionalidades2.md` (número pegado, sin separador, parece un duplicado accidental más que una v2 intencional); `estado_sesion_9jul.md` que en `ls` ordena *después* de `estado_sesion_11jul.md` porque "9" > "1" como texto. Ninguno de estos rompe el proyecto — todos hacen más lento encontrar o entender un documento seis semanas después.
+
+> **Regla:**
+> - kebab-case siempre (minúsculas, guiones). Excepción: los nombres que herramientas y humanos reconocen por convención fija (`README.md`, `CHANGELOG.md`, `CLAUDE.md`).
+> - Fecha en ISO completo `AAAA-MM-DD`, con ceros — nunca `9jul`, nunca sin año. Si `ls | sort` no da el orden cronológico real, el nombre está mal.
+> - Carpetas de versión: `v1/`, `v2/`, `v3/` — un dígito, minúscula, igual en todos los proyectos.
+> - La versión no se pega al nombre del archivo (`funcionalidades2.md`); vive **dentro** del archivo con anclas estables (P-06, `§1`, `§2`...). Si el archivo de verdad hay que partirlo, el corte lleva guion explícito (`funcionalidades-v2.md`), nunca un número pegado.
+> - Un rol conceptual = un nombre fijo, sin importar qué día se escribe. El snapshot para retomar es siempre `sesion-AAAA-MM-DD.md` con la fecha en que se ESCRIBE, no la fecha que describe — la ambigüedad "sesión de hoy" vs. "prep para mañana" se resuelve en el texto, no en el nombre.
+> - Vocabulario mínimo por rol (de P-01b), para no reinventarlo cada proyecto: `README.md` (índice), `sesion-AAAA-MM-DD.md` (snapshot para retomar), `bitacora.md` (histórico con anclas §N), `pasos.md` (checklist vivo, se escribe antes y se tacha después con fecha), `pendientes.md` (cola de verificación humana, distinta de `pasos.md`), `plan-<bloque>.md` (plan acotado, con su lista de qué NO entra), `ideas-futuras.md` (aparcadero).
+
+*Nombre técnico: File naming convention / Chronological-sort-safe identifiers*
+
+---
+
+### Riesgos observados (sin patrón resuelto todavía)
+
+Estos dos no llegan a regla porque no hay todavía una solución validada — son la señal de que hace falta una, anotada para no perderla.
+
+**R-01 — Síntoma que sobrevive al reset**
+La regla "dos fallos seguidos = parar e instrumentar" (P-07) funciona *dentro* de una sesión — el caso del botón de DeepSeek en Helecho (3 rondas, causa raíz encontrada al instrumentar en la tercera) es el ejemplo de manual. Pero el bug del ícono del AppImage tuvo dos causas encadenadas descubiertas en sesiones distintas (10 y 11 jul), y una tercera causa relacionada apareció en una sesión posterior todavía. El postmortem de P-07 cierra un incidente puntual; no hay hoy un mecanismo para un síntoma que se cierra, vuelve a abrirse con otra causa, y cruza resets de contexto sin que se note que es "la misma familia de bug".
+
+**R-02 — Densidad de decisión propia sin agregación**
+Es la cara de riesgo de P-09: un proyecto puede acumular muchas decisiones propias pequeñas, cada una razonable vista sola, que en conjunto terminan moldeando el producto en una dirección que nadie aprobó como bloque. En Siwar y Helecho no se observó que esto haya pasado — pero tampoco hay ninguna alarma en el framework que lo detectaría si pasara. Falta un mecanismo de agregación (¿cuántas decisiones propias de peso medio se acumularon esta semana?) que hoy no existe.
+
+### Dónde encajan en el Ciclo AR
+
+| Patrón/Riesgo | Refuerza |
+|---|---|
+| P-09 | AUDITAR — clasifica antes de revisar, no todo pesa igual |
+| P-10 | EJECUTAR — la aprobación pasa a ser síncrona para lo que pesa |
+| P-11 | RESETEAR — lo descartado también viaja al nuevo chat, no solo lo que quedó |
+| P-12 | EJECUTAR — límite duro del contexto, no depende del criterio del agente |
+| P-13 | PLANEAR — el documento de contexto empieza por tener un nombre que se entiende sin abrirlo |
+| R-01 | DETECTAR — el límite de una sesión no es el límite del síntoma |
+| R-02 | AUDITAR — falta agregación, no solo etiqueta individual |
+
+*Validado en: [Siwar](../siwwar/siwar-app) (julio 2026) y [Helecho](../Helecho) (junio–julio 2026).*
